@@ -3,6 +3,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import axios from "axios";
 
 export default function SignUp() {
     const [email, setEmail] = useState('');
@@ -11,45 +12,46 @@ export default function SignUp() {
     const [restaurantName, setRestaurantName] = useState('');
     const [restaurantAddress, setRestaurantAddress] = useState('');
 
+    const [error, setError] = useState(null);
+    const [success, setSuccess] = useState(null);
+    const [loading, setLoading] = useState(false);
+
     const router = useRouter();
 
     const handleSignup = async (e: any) => {
         e.preventDefault();
         // Basic validation (add more robust validation)
         if (!email || !password || !ownerName || !restaurantName || !restaurantAddress) {
-            alert('Please fill in all fields.');
+            setError('Please fill all fields');
             return;
         }
 
         // Replace with your actual signup logic (API call)
         try {
             // Example: Making a POST request to your API
-            const response = await fetch('/api/signup', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    email,
-                    password,
-                    ownerName,
-                    restaurantName,
-                    restaurantAddress,
-                }),
+            const response = await axios.post('http://127.0.0.1:8000/signup', {
+                email,
+                password,
+                ownerName,
+                restaurantName,
+                restaurantAddress
             });
 
-            if (response.ok) {
-                // Successful signup
-                console.log('Signup successful');
-                router.push('/signin'); // Redirect to signin page
-            } else {
-                // Signup failed
-                const errorData = await response.json();
-                alert(errorData.message || 'Signup failed. Please try again.');
-            }
+            setSuccess('SignUp Successfully! Redirecting to signIn...');
+            setLoading(false);
+            setTimeout(() => router.push('/signin'), 2000); // Redirect in two seconds.
         } catch (err) {
             console.error('Error during signup:', err);
-            alert('An unexpected error occurred. Please try again.');
+            setLoading(false);
+            if (err.response){
+                setError(err.response.data.detail || 'SignUp failed, Please try again!');
+            }else if (err.request){
+                setError('No Response from server.');
+            }else{
+                setError('An unexpected error occured.');
+            }
+
+            console.error('Error during signup', err);
         }
     };
 
@@ -125,13 +127,16 @@ export default function SignUp() {
                     </div>
                     <div className="flex items-center justify-between">
                         <button
-                            className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
+                            className={`bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
                             type="submit"
+                            disabled={loading}
                         >
-                            Sign Up
+                            {loading ? 'Signing Up...' : 'Sign Up'}
                         </button>
                     </div>
                 </form>
+                {error && <p className="text-red-500 mt-4 text-center">{error}</p>}
+                {success && <p className="text-green-500 mt-4 text-center">{success}</p>}
                 <br />
                 <div className="mt-4 text-center">
                     <p className="text-gray-400">
